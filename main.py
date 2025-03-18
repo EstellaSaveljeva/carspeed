@@ -7,7 +7,7 @@ import supervision as sv  # Используем Supervision
 model = YOLO("yolo11x.pt")
 
 # Загрузка видео
-video_path = "50kmh_mugur_jaunolaine.mov"
+video_path = "50kmh_prieksa_jaunolaine.mov"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -38,9 +38,9 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Кодек для MP4
 out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
 # Координаты четырех углов области интереса (задай вручную)
-x1, y1 = 5150, 3000  # Правый верхний угол
-x2, y2 = 4750, 3000  # Левый верхний угол
-x3, y3 = 8000, 6000  # Левый нижний угол
+x1, y1 = 5200, 3000  # Правый верхний угол
+x2, y2 = 4100, 3000  # Левый верхний угол
+x3, y3 = 7500, 6000  # Левый нижний угол
 x4, y4 = 10700, 4600  # Правый нижний угол
 
 # Приведение координат к масштабу кадра
