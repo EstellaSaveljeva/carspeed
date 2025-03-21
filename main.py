@@ -167,6 +167,22 @@ blue_y1_top, blue_y2_top = int(blue_y1_top * scale), int(blue_y2_top * scale)
 blue_x1_bottom, blue_x2_bottom = int(blue_x1_bottom * scale), int(blue_x2_bottom * scale)
 blue_y1_bottom, blue_y2_bottom = int(blue_y1_bottom * scale), int(blue_y2_bottom * scale)
 
+src = np.array([
+    [blue_x1_top, blue_y1_top],
+    [blue_x2_top, blue_y2_top],
+    [blue_x1_bottom, blue_y1_bottom],
+    [blue_x2_bottom, blue_y2_bottom]
+], dtype=np.float32)
+
+dst = np.array([
+    [0, 0],
+    [6, 0],  # ширина полосы — 4 м
+    [0, distance_m],     # 60 м по вертикали между синими линиями
+    [6, distance_m]
+], dtype=np.float32)
+
+matrix = cv2.getPerspectiveTransform(src, dst)
+
 
 # Красная рамка (область интереса)
 pts = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]], np.int32)
@@ -198,13 +214,26 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 # 🟢 Аннотаторы
 box_annotator = sv.BoxAnnotator(color=sv.Color.GREEN, thickness=2)
-label_annotator = sv.LabelAnnotator()
+
+label_annotator = sv.LabelAnnotator(
+    text_color=sv.Color.BLACK,       # цвет текста
+)
+
+from collections import defaultdict, deque
+
+# История Y-координат в метрах после трансформации
+real_y_history = defaultdict(lambda: deque(maxlen=15))  # 15 кадров = 0.25 сек при 60 FPS
+
 
 # Deep SORT трекер
 tracker = DeepSort(max_age=30)
 
 # Словарь для засечки времени
 vehicle_timestamps = {}
+
+# Хранение всех скоростей по сдвигу
+vehicle_speeds_shift = defaultdict(list)  
+
 
 # Обработка кадров
 frame_count = 0
@@ -253,10 +282,46 @@ while cap.isOpened():
         cx = (l + r) // 2
         cy = (t + b) // 2
 
+        real_point = cv2.perspectiveTransform(
+        np.array([[[cx, cy]]], dtype=np.float32),
+        matrix
+        )[0][0]
+
+        real_y = real_point[1]
+        real_y_history[track_id].append(real_y)
+
+        speed_transformed = None
+        if len(real_y_history[track_id]) >= 2:
+            delta_y = real_y_history[track_id][-1] - real_y_history[track_id][0]
+            time_delta = len(real_y_history[track_id]) / fps
+            if time_delta > 0 and abs(delta_y) > 1:
+                speed_transformed = abs(delta_y / time_delta) * 3.6
+
+        # Сохранение скорости по сдвигу
+        if speed_transformed is not None:
+            # Ограничение скачков скорости (максимум +30% от предыдущей)
+            if len(vehicle_speeds_shift[track_id]) > 0:
+                last_speed = vehicle_speeds_shift[track_id][-1]
+                if abs(speed_transformed - last_speed) > last_speed * 0.3:  # Не более 30% скачка
+                    speed_transformed = last_speed
+
+            vehicle_speeds_shift[track_id].append(speed_transformed)
+
+
+        # Метод с линиями (остался без изменений)
         if track_id not in vehicle_timestamps:
             vehicle_timestamps[track_id] = {"start": None, "end": None, "last_position": cy}
 
         last_cy = vehicle_timestamps[track_id]["last_position"]
+
+        # ➕ Перед расчётом скорости, определяем направление:
+        direction = cy - last_cy  # + вниз, - вверх
+
+        # ⛔ Если машина движется вверх (от нижней к верхней линии), игнорируем расчёты
+        if direction < -2:  # с порогом для стабильности
+            continue
+
+
 
         if vehicle_timestamps[track_id]["start"] is None and is_above_line(cx, cy, blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top):
             vehicle_timestamps[track_id]["start"] = frame_time
@@ -265,11 +330,30 @@ while cap.isOpened():
             vehicle_timestamps[track_id]["end"] = frame_time
 
         vehicle_timestamps[track_id]["last_position"] = cy
-        # 🟩 Добавляем в список для отрисовки
+
+
+       # 🟩 Добавляем в список для отрисовки
         tracked_boxes.append([l, t, r, b])
         confidences.append(1.0)
         class_ids.append(2)
-        labels.append(f"ID {track_id}")
+
+        # 🏷 Создаём подпись с обеими скоростями
+        label_parts = []
+
+        if speed_transformed is not None:
+            label_parts.append(f"T: {speed_transformed:.1f} km/h")
+
+        if vehicle_timestamps[track_id]["start"] is not None and vehicle_timestamps[track_id]["end"] is not None:
+            travel_time = vehicle_timestamps[track_id]["end"] - vehicle_timestamps[track_id]["start"]
+            if travel_time > 0:
+                speed_line = (distance_m / travel_time) * 3.6
+                label_parts.append(f"L: {speed_line:.1f} km/h")
+
+        if not label_parts:
+            label_parts.append("Tracking...")
+
+        labels.append(" | ".join(label_parts))
+
 
 
     if tracked_boxes:
@@ -291,11 +375,24 @@ while cap.isOpened():
 
     out.write(frame)
 
+# Вывод результатов обоих методов
+print("\n📊 Итоговые скорости:")
+
 for vehicle_id, times in vehicle_timestamps.items():
     if times["start"] is not None and times["end"] is not None:
         travel_time = times["end"] - times["start"]
         speed_kmh = (distance_m / travel_time) * 3.6
-        print(f"🚗 Машина {vehicle_id} -> Скорость: {speed_kmh:.2f} км/ч")
+        print(f"🚗 Машина {vehicle_id}: L: {speed_kmh:.2f} км/ч")
+
+for vehicle_id, speeds in vehicle_speeds_shift.items():
+    if speeds:
+        avg_speed_shift = sum(speeds) / len(speeds)
+        print(f"🚗 Машина {vehicle_id}: T: {avg_speed_shift:.2f} км/ч")
+
+cap.release()
+out.release()
+cv2.destroyAllWindows()
+
 
 cap.release()
 out.release()
