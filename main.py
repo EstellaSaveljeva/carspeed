@@ -93,13 +93,13 @@ elif "70kmh_prieksa_jaunolaine" in video_path.lower():
     x2, y2 = 4750, 3000   # Augšējais kreisais stūris
     x3, y3 = 8000, 6000   # Kreisais apakšējais stūris
     x4, y4 = 10700, 4600  # Apakšējais labais stūris
-    distance_m = 200
+    distance_m = 100
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 5100, 3050         # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 4250, 3200         # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 7350, 5700   # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 10150, 5350  # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5200, 3025         # Augšējais labais stūris
+    blue_x2_top, blue_y2_top = 4800, 3050         # Augšējais kreisais stūris
+    blue_x1_bottom, blue_y1_bottom = 7950, 5950   # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 10650, 4550  # Apakšējais labais stūris
 
     blue_line_thickness = 5
 
@@ -237,8 +237,14 @@ while cap.isOpened():
             boxes_for_tracking.append(([x_min, y_min, x_max - x_min, y_max - y_min], conf, 'car'))
 
     tracks = tracker.update_tracks(boxes_for_tracking, frame=frame)
+    
+    tracked_boxes = []
+    confidences = []
+    class_ids = []
+    labels = []
 
     for track in tracks:
+    
         if not track.is_confirmed():
             continue
 
@@ -259,9 +265,29 @@ while cap.isOpened():
             vehicle_timestamps[track_id]["end"] = frame_time
 
         vehicle_timestamps[track_id]["last_position"] = cy
+        # 🟩 Добавляем в список для отрисовки
+        tracked_boxes.append([l, t, r, b])
+        confidences.append(1.0)
+        class_ids.append(2)
+        labels.append(f"ID {track_id}")
+
+
+    if tracked_boxes:
+        detections_sv = sv.Detections(
+            xyxy=np.array(tracked_boxes),
+            confidence=np.array(confidences),
+            class_id=np.array(class_ids)
+        )
+
+        # 🟩 Отрисовка боксов и подписей
+        frame = box_annotator.annotate(scene=frame, detections=detections_sv)
+        frame = label_annotator.annotate(scene=frame, detections=detections_sv, labels=labels)
+
 
     cv2.line(frame, (blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top), (255, 0, 0), blue_line_thickness)
     cv2.line(frame, (blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom), (255, 0, 0), blue_line_thickness)
+    # 🟥 Красная рамка
+    cv2.polylines(frame, [pts], isClosed=True, color=(0, 0, 255), thickness=2)
 
     out.write(frame)
 
