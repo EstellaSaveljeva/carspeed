@@ -8,7 +8,7 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 model = YOLO("yolo11x.pt")
 
 # Загрузка видео
-video_path = "70kmh_prieksa_jaunolaine.mov"
+video_path = "50kmh_prieksa_jaunolaine.mov"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -48,26 +48,26 @@ if "50kmh_mugur_jaunolaine" in video_path.lower():
     distance_m = 200
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 4800, 3100            # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 4200, 3200            # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 7300, 5800      # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 10000, 5500     # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5000, 3050           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5300, 3050           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5000     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Apakšējais labais stūris
 
     blue_line_thickness = 3
 
 elif "50kmh_prieksa_jaunolaine" in video_path.lower():
     # Красная рамка
-    x1, y1 = 5100, 2800     # Augšējais labais stūris
-    x2, y2 = 4200, 2800     # Augšējais kreisais stūris
-    x3, y3 = 7500, 5900     # Kreisais apakšējais stūris
-    x4, y4 = 10600, 4500     # Apakšējais labais stūris
-    distance_m = 200
+    x1, y1 = 5200, 3000     # Augšējais labais stūris
+    x2, y2 = 4900, 3000     # Augšējais kreisais stūris
+    x3, y3 = 7950, 5500     # Kreisais apakšējais stūris
+    x4, y4 = 11000, 4800    # Apakšējais labais stūris
+    distance_m = 60
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 4900, 3150           # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 4300, 3250           # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 7400, 5850     # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 10100, 5450    # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 4950, 3100           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5450, 3075           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5500     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 11000, 4750    # Apakšējais labais stūris
 
     blue_line_thickness = 3
 
@@ -80,12 +80,12 @@ elif "70kmh_mugur_jaunolaine" in video_path.lower():
     distance_m = 200
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 4750, 3050           # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 4150, 3150           # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 7250, 5750     # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 9950, 5400     # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5000, 3050           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5300, 3050           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5000     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Apakšējais labais stūris
 
-    blue_line_thickness = 5
+    blue_line_thickness = 3
 
 elif "70kmh_prieksa_jaunolaine" in video_path.lower():
     # Красная рамка
@@ -93,15 +93,15 @@ elif "70kmh_prieksa_jaunolaine" in video_path.lower():
     x2, y2 = 4750, 3000   # Augšējais kreisais stūris
     x3, y3 = 8000, 6000   # Kreisais apakšējais stūris
     x4, y4 = 10700, 4600  # Apakšējais labais stūris
-    distance_m = 100
+    distance_m = 60
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 5200, 3025         # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 4800, 3050         # Augšējais kreisais stūris
+    blue_x1_top, blue_y1_top = 5200, 3025         # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 4800, 3050         # Augšējais labais stūris
     blue_x1_bottom, blue_y1_bottom = 7950, 5950   # Kreisais apakšējais stūris
     blue_x2_bottom, blue_y2_bottom = 10650, 4550  # Apakšējais labais stūris
 
-    blue_line_thickness = 5
+    blue_line_thickness = 3
 
 elif "50kmh_ropazi" in video_path.lower():
     # Красная рамка
@@ -112,26 +112,26 @@ elif "50kmh_ropazi" in video_path.lower():
     distance_m = 150
 
     # 🟦 Синие линии (наклонные)
-    blue_x1_top, blue_y1_top = 6200, 3000           # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 5000, 3100           # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 5400, 5600     # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 3000, 5700     # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5000, 3050           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5300, 3050           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5000     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Apakšējais labais stūris
 
     blue_line_thickness = 3
 
 elif "70kmh_ropazi" in video_path.lower():
     # Красная рамка
-    x1, y1 = 6500, 2950     # Augšējais labais stūris
-    x2, y2 = 5800, 2950     # Augšējais kreisais stūris
-    x3, y3 = 550, 5850      # Kreisais apakšējais stūris
-    x4, y4 = 6950, 5850     # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5000, 3500           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5200, 3050           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5550     # Apakšējais labais stūris
+    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Kreisais apakšējais stūris
     distance_m = 150
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 6300, 3100           # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 5100, 3200           # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 5500, 5650     # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 3100, 5750     # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5000, 3050           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5300, 3050           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5000     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Apakšējais labais stūris
 
     blue_line_thickness = 3
 
@@ -144,10 +144,10 @@ elif "80kmh_ropazi" in video_path.lower():
     distance_m = 150
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 6400, 3150           # Augšējais labais stūris
-    blue_x2_top, blue_y2_top = 5200, 3250           # Augšējais kreisais stūris
-    blue_x1_bottom, blue_y1_bottom = 5600, 5700     # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 3200, 5800     # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5000, 3050           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 5300, 3050           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 7400, 5000     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Apakšējais labais stūris
 
     blue_line_thickness = 3
 
