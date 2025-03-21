@@ -7,7 +7,7 @@ import supervision as sv  # Используем Supervision
 model = YOLO("yolo11x.pt")
 
 # Загрузка видео
-video_path = "80kmh_ropazi.mov"
+video_path = "50kmh_ropazi.mov"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -39,15 +39,17 @@ out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
 # 🟥 Выбор координат красной рамки в зависимости от названия видео
 if "jaunolaine" in video_path.lower():
-    x1, y1 = 5200, 3000  # Правый верхний угол
-    x2, y2 = 4100, 3000  # Левый верхний угол
-    x3, y3 = 7500, 6000  # Левый нижний угол
-    x4, y4 = 10700, 4600  # Правый нижний угол
+    x1, y1 = 5200, 3000  # Augšējais labais stūris 
+    x2, y2 = 4100, 3000  # Augšējais kreisais stūris
+    x3, y3 = 7500, 6000  # Apakšējais kreisais stūris
+    x4, y4 = 10700, 4600 # Apakšējais labais stūris
+    distance_m = 200  # Расстояние между границами (метры)
 elif "ropazi" in video_path.lower():
-    x1, y1 = 6100, 3200  # Правый верхний угол
-    x2, y2 = 5800, 3200  # Левый верхний угол
-    x3, y3 = 850, 5600  # Левый нижний угол
-    x4, y4 = 6900, 5600 # Правый нижний угол
+    x1, y1 = 6400, 2900  # Augšējais labais stūris
+    x2, y2 = 5700, 2900  # Augšējais kreisais stūris
+    x3, y3 = 500, 5800   # Apakšējais kreisais stūris
+    x4, y4 = 6900, 5800  # Apakšējais labais stūris
+    distance_m = 150  # Расстояние между границами (метры)
 else:
     print("Ошибка: название видео не содержит 'jaunolaine' или 'ropazi'. Укажите правильный файл.")
     cap.release()
@@ -57,10 +59,8 @@ else:
 x1, x2, x3, x4 = int(x1 * scale), int(x2 * scale), int(x3 * scale), int(x4 * scale)
 y1, y2, y3, y4 = int(y1 * scale), int(y2 * scale), int(y3 * scale), int(y4 * scale)
 
-# Создаем маску для выделенной зоны
-mask = np.zeros_like(frame[:, :, 0], dtype=np.uint8)
+# Создаем красную рамку (без маски)
 pts = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]], np.int32)
-cv2.fillPoly(mask, [pts], 255)  # Заливаем область белым
 
 # 🔴 **Вывод первого кадра с красной рамкой**
 frame_with_zone = frame.copy()
@@ -74,7 +74,11 @@ cv2.destroyAllWindows()
 box_annotator = sv.BoxAnnotator(color=sv.Color.GREEN, thickness=2)  # Рамка
 label_annotator = sv.LabelAnnotator()  # Подписи
 
+# Словарь для отслеживания машин (ID -> время пересечения границ)
+vehicle_timestamps = {}
+
 # Обработка каждого кадра видео
+frame_count = 0
 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
 while cap.isOpened():
@@ -82,11 +86,11 @@ while cap.isOpened():
     if not ret:
         break  # Конец видео
 
-    # Применяем маску, чтобы оставить только область интереса
-    masked_frame = cv2.bitwise_and(frame, frame, mask=mask)
+    frame_time = frame_count / fps  # Текущее время кадра (секунды)
+    frame_count += 1
 
-    # Запускаем YOLO на кадре
-    results = model(masked_frame)
+    # Запускаем YOLO на полном кадре (🚗 теперь видит машину везде!)
+    results = model(frame)
 
     detections = []  # Список всех найденных машин
     confidences = []  # Список вероятностей
@@ -103,17 +107,22 @@ while cap.isOpened():
             if cls != 2:
                 continue
 
-            # 🔹 Игнорируем слишком большие боксы (ошибочные детекции)
-            box_width = x_max - x_min
-            box_height = y_max - y_min
-            if box_width > frame_width * 0.7 or box_height > frame_height * 0.7:
-                continue
-
             # 🔹 Корректируем границы боксов
             x_min = max(x_min, 0)
             y_min = max(y_min, 0)
             x_max = min(x_max, frame_width)
             y_max = min(y_max, frame_height)
+
+            # 🔹 Определяем ID машины (на основе координат)
+            vehicle_id = (x_min, x_max)  # Уникальный идентификатор
+
+            # 🔹 Отслеживание пересечения верхней и нижней границы
+            if vehicle_id not in vehicle_timestamps:
+                if y_min <= y1:  # Верхняя граница
+                    vehicle_timestamps[vehicle_id] = {"start": frame_time, "end": None}
+            else:
+                if y_max >= y3 and vehicle_timestamps[vehicle_id]["end"] is None:  # Нижняя граница
+                    vehicle_timestamps[vehicle_id]["end"] = frame_time
 
             # 🔹 Добавляем в список для Supervision
             detections.append([x_min, y_min, x_max, y_max])
@@ -142,6 +151,13 @@ while cap.isOpened():
 
     # Записываем обработанный кадр в файл
     out.write(frame)
+
+# Вычисляем скорость
+for vehicle_id, times in vehicle_timestamps.items():
+    if times["start"] is not None and times["end"] is not None:
+        travel_time = times["end"] - times["start"]  # Время в секундах
+        speed_kmh = (distance_m / travel_time) * 3.6  # Перевод в км/ч
+        print(f"🚗 Машина {vehicle_id} -> Скорость: {speed_kmh:.2f} км/ч")
 
 # Освобождение ресурсов
 cap.release()
