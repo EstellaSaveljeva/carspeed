@@ -65,7 +65,7 @@ elif "50kmh_prieksa_jaunolaine" in video_path.lower():
 
     # 🟦 Синие линии
     blue_x1_top, blue_y1_top = 4950, 3100           # Augšējais kreisais stūris
-    blue_x2_top, blue_y2_top = 5450, 3075           # Augšējais labais stūris
+    blue_x2_top, blue_y2_top = 5550, 3075           # Augšējais labais stūris
     blue_x1_bottom, blue_y1_bottom = 7400, 5500     # Kreisais apakšējais stūris
     blue_x2_bottom, blue_y2_bottom = 11000, 4750    # Apakšējais labais stūris
 
@@ -221,8 +221,8 @@ label_annotator = sv.LabelAnnotator(
 
 from collections import defaultdict, deque
 
-# История Y-координат в метрах после трансформации
-real_y_history = defaultdict(lambda: deque(maxlen=15))  # 15 кадров = 0.25 сек при 60 FPS
+# История Y-координат в метрах после трансформации — храним последнюю 1 секунду
+real_y_history = defaultdict(lambda: deque(maxlen=int(fps)))
 
 
 # Deep SORT трекер
@@ -278,24 +278,41 @@ while cap.isOpened():
             continue
 
         track_id = track.track_id
+
+        # координаты центра
         l, t, r, b = map(int, track.to_ltrb())
         cx = (l + r) // 2
-        cy = (t + b) // 2
+        cy = b  # нижняя граница (bottom)
 
+
+        # перспектива
         real_point = cv2.perspectiveTransform(
-        np.array([[[cx, cy]]], dtype=np.float32),
-        matrix
+            np.array([[[cx, cy]]], dtype=np.float32),
+           matrix
         )[0][0]
 
         real_y = real_point[1]
+
+        # Сохраняем координаты в историю до проверки "done"
         real_y_history[track_id].append(real_y)
 
+        # если машина уже прошла обе линии — больше ничего не делаем
+        if vehicle_timestamps.get(track_id, {}).get("done"):
+            continue
+
+
         speed_transformed = None
-        if len(real_y_history[track_id]) >= 2:
-            delta_y = real_y_history[track_id][-1] - real_y_history[track_id][0]
-            time_delta = len(real_y_history[track_id]) / fps
-            if time_delta > 0 and abs(delta_y) > 1:
-                speed_transformed = abs(delta_y / time_delta) * 3.6
+
+        # Только если объект между линиями
+        if is_above_line(cx, cy, blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom) and \
+           not is_above_line(cx, cy, blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top):
+            
+            if len(real_y_history[track_id]) >= 2:
+                delta_y = real_y_history[track_id][-1] - real_y_history[track_id][0]
+                time_delta = len(real_y_history[track_id]) / fps
+                if time_delta > 0 and abs(delta_y) > 1:
+                    speed_transformed = abs(delta_y / time_delta) * 3.6
+
 
         # Сохранение скорости по сдвигу
         if speed_transformed is not None:
@@ -310,7 +327,13 @@ while cap.isOpened():
 
         # Метод с линиями (остался без изменений)
         if track_id not in vehicle_timestamps:
-            vehicle_timestamps[track_id] = {"start": None, "end": None, "last_position": cy}
+            vehicle_timestamps[track_id] = {
+            "start": None,
+            "end": None,
+            "last_position": cy,
+            "done": False
+        }
+
 
         last_cy = vehicle_timestamps[track_id]["last_position"]
 
@@ -328,6 +351,8 @@ while cap.isOpened():
 
         if vehicle_timestamps[track_id]["end"] is None and not is_above_line(cx, cy, blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom):
             vehicle_timestamps[track_id]["end"] = frame_time
+            vehicle_timestamps[track_id]["done"] = True  # больше не обновляем историю
+
 
         vehicle_timestamps[track_id]["last_position"] = cy
 
