@@ -8,7 +8,7 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 model = YOLO("yolo11x.pt")
 
 # Загрузка видео
-video_path = "50kmh_prieksa_jaunolaine.mov"
+video_path = "70kmh_ropazi.mov"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -121,17 +121,17 @@ elif "50kmh_ropazi" in video_path.lower():
 
 elif "70kmh_ropazi" in video_path.lower():
     # Красная рамка
-    blue_x1_top, blue_y1_top = 5000, 3500           # Augšējais kreisais stūris
-    blue_x2_top, blue_y2_top = 5200, 3050           # Augšējais labais stūris
-    blue_x1_bottom, blue_y1_bottom = 7400, 5550     # Apakšējais labais stūris
-    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Kreisais apakšējais stūris
-    distance_m = 150
+    x1, y1 = 6400, 3200     # Augšējais labais stūris
+    x2, y2 = 5700, 3200     # Augšējais Kreisais stūris
+    x3, y3 = 500, 5700     # Apakšējais Kreisais stūris
+    x4, y4 = 6600, 6200    # labais apakšējais stūris
+    distance_m =45
 
     # 🟦 Синие линии
-    blue_x1_top, blue_y1_top = 5000, 3050           # Augšējais kreisais stūris
-    blue_x2_top, blue_y2_top = 5300, 3050           # Augšējais labais stūris
-    blue_x1_bottom, blue_y1_bottom = 7400, 5000     # Kreisais apakšējais stūris
-    blue_x2_bottom, blue_y2_bottom = 10900, 5250    # Apakšējais labais stūris
+    blue_x1_top, blue_y1_top = 5350, 3275           # Augšējais kreisais stūris
+    blue_x2_top, blue_y2_top = 6400, 3275           # Augšējais labais stūris
+    blue_x1_bottom, blue_y1_bottom = 1050, 5500     # Kreisais apakšējais stūris
+    blue_x2_bottom, blue_y2_bottom = 6450, 5900    # Apakšējais labais stūris
 
     blue_line_thickness = 3
 
@@ -170,8 +170,9 @@ blue_y1_bottom, blue_y2_bottom = int(blue_y1_bottom * scale), int(blue_y2_bottom
 src = np.array([
     [blue_x1_top, blue_y1_top],
     [blue_x2_top, blue_y2_top],
-    [blue_x1_bottom, blue_y1_bottom],
-    [blue_x2_bottom, blue_y2_bottom]
+#[blue_x1_bottom, blue_y1_bottom],
+    [blue_x2_bottom, blue_y2_bottom],
+    [blue_x1_bottom, blue_y1_bottom]
 ], dtype=np.float32)
 
 dst = np.array([
