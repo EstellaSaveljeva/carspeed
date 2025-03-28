@@ -1,18 +1,22 @@
 import cv2
 import numpy as np
-from ultralytics import YOLO
-import supervision as sv
-from deep_sort_realtime.deepsort_tracker import DeepSort
 from collections import defaultdict, deque
-from coordinates import get_coordinates
+import supervision as sv
 
-# import functions for speed calculation
+from coordinates import get_coordinates
 from speed_by_shift import compute_speed_shift
 from speed_by_lines import update_vehicle_timestamp, compute_speed_line
+from video import (
+    setup_video, get_video_params, calculate_scaling,
+    create_video_writer, draw_initial_frame
+)
+from tracking import (
+    load_model, initialize_tracker,
+    get_detections_in_roi, transform_point
+)
+
 
 def is_above_line(cx, cy, x1, y1, x2, y2):
-
-    # check if the point (cx, cy) is above the line defined by two points (x1, y1) and (x2, y2)
     if x1 == x2:
         return cx <= x1
     m = (y2 - y1) / (x2 - x1)
@@ -20,18 +24,12 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
     y_on_line = m * cx + b
     return cy <= y_on_line
 
+
 def main():
-    # uploads the YOLO model
-    model = YOLO("yolo11x.pt")
-
-    # uploads the video
+    model = load_model("yolo11x.pt")
     video_path = "50kmh_prieksa_jaunolaine.mov"
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        print("error: cannot open video.")
-        return
+    cap = setup_video(video_path)
 
-    # get the coordinates from coordinates.py
     try:
         (x1, y1, x2, y2, x3, y3, x4, y4, distance_m,
          blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top,
@@ -42,30 +40,18 @@ def main():
         cap.release()
         return
 
-    # read the first frame
     ret, frame = cap.read()
     if not ret:
         print("Error: cannot read frame.")
         cap.release()
         return
 
-    # get the video parameters
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-
-    # Scale the frame for display
-    screen_width, screen_height = 1280, 720
-    scale = min(screen_width / frame_width, screen_height / frame_height)
-    new_width = int(frame_width * scale)
-    new_height = int(frame_height * scale)
-
-    # Setting up video recording
+    frame_width, frame_height, fps = get_video_params(cap)
+    scale, new_width, new_height = calculate_scaling(frame_width, frame_height)
     output_path = "output.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+    out = create_video_writer(output_path, 'mp4v', fps, (frame_width, frame_height))
 
-    # Scale the coordinates
+    # Scale coordinates
     x1, x2, x3, x4 = int(x1 * scale), int(x2 * scale), int(x3 * scale), int(x4 * scale)
     y1, y2, y3, y4 = int(y1 * scale), int(y2 * scale), int(y3 * scale), int(y4 * scale)
     blue_x1_top, blue_x2_top = int(blue_x1_top * scale), int(blue_x2_top * scale)
@@ -73,7 +59,7 @@ def main():
     blue_x1_bottom, blue_x2_bottom = int(blue_x1_bottom * scale), int(blue_x2_bottom * scale)
     blue_y1_bottom, blue_y2_bottom = int(blue_y1_bottom * scale), int(blue_y2_bottom * scale)
 
-    # Setting up the perspective transformation matrix
+    # Perspective transformation matrix
     src = np.array([
         [blue_x1_top, blue_y1_top],
         [blue_x2_top, blue_y2_top],
@@ -89,80 +75,52 @@ def main():
     ], dtype=np.float32)
 
     matrix = cv2.getPerspectiveTransform(src, dst)
-
-    # define the region of interest (red frame)
     pts = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]], np.int32)
 
-    # Display the first frame with the region of interest and lines
-    frame_with_zone = frame.copy()
-    cv2.polylines(frame_with_zone, [pts], isClosed=True, color=(0, 0, 255), thickness=3)
-    cv2.line(frame_with_zone, (blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top), (255, 0, 0), blue_line_thickness)
-    cv2.line(frame_with_zone, (blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom), (255, 0, 0), blue_line_thickness)
-    resized_frame = cv2.resize(frame_with_zone, (new_width, new_height))
+    # Show first frame with ROI and speed lines
+    frame_with_lines = draw_initial_frame(
+        frame,
+        pts,
+        ((blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top)),
+        ((blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom)),
+        blue_line_thickness
+    )
+    resized_frame = cv2.resize(frame_with_lines, (new_width, new_height))
     cv2.imshow("First frame", resized_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    # initialize the annotators
     box_annotator = sv.BoxAnnotator(color=sv.Color.GREEN, thickness=2)
     label_annotator = sv.LabelAnnotator(text_color=sv.Color.BLACK)
 
-    # history for the shift method (store the history of real coordinates)
+    tracker = initialize_tracker()
+    vehicle_timestamps = {}
+    vehicle_speeds_shift = defaultdict(list)
     real_y_history = defaultdict(lambda: deque(maxlen=int(fps)))
 
-    # initialize the Deep SORT tracker
-    tracker = DeepSort(max_age=30)
-
-    # vocabulary for timestamps (line method)
-    vehicle_timestamps = {}
-
-    # Хранение скоростей по методу сдвига
-    vehicle_speeds_shift = defaultdict(list)
+    top_line = (blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top)
+    bottom_line = (blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom)
 
     frame_count = 0
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-    # definition of the top and bottom lines for speed calculation (tuples: (x1, y1, x2, y2))
-    top_line = (blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top)
-    bottom_line = (blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom)
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        
+
         frame_time = frame_count / fps
         frame_count += 1
 
         results = model(frame)
-        boxes_for_tracking = []
-
-        # list of detections for the tracker
-        for result in results:
-            for box in result.boxes:
-                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
-                conf = box.conf[0].item()
-                cls = int(box.cls[0].item())
-
-                # use only cars (class 2)
-                if cls != 2:
-                    continue
-
-                # check if the center of the box is inside the region of interest
-                if not cv2.pointPolygonTest(pts, ((x_min + x_max) // 2, (y_min + y_max) // 2), False) >= 0:
-                    continue
-
-                # add the box to the list
-                boxes_for_tracking.append(([x_min, y_min, x_max - x_min, y_max - y_min], conf, 'car'))
-        # update the tracker
+        boxes_for_tracking = get_detections_in_roi(results, pts)
         tracks = tracker.update_tracks(boxes_for_tracking, frame=frame)
-        
+
         tracked_boxes = []
         confidences = []
         class_ids = []
         labels = []
 
-        # iterate over the tracks
         for track in tracks:
             if not track.is_confirmed():
                 continue
@@ -172,33 +130,26 @@ def main():
             cx = (l + r) // 2
             cy = b
 
-            # transform the coordinates to the real space
-            real_point = cv2.perspectiveTransform(
-                np.array([[[cx, cy]]], dtype=np.float32),
-                matrix
-            )[0][0]
-
+            # Transform pixel coordinates to real-world coordinates
+            real_point = transform_point(cx, cy, matrix)
             real_y_history[track_id].append(real_point)
 
-            # update the timestamps for the line method
+            # Update timestamps for line-based speed estimation
             if track_id not in vehicle_timestamps:
                 vehicle_timestamps[track_id] = {"start": None, "end": None, "last_position": cy, "done": False}
-            if not vehicle_timestamps[track_id].get("done"):
+
+            if not vehicle_timestamps[track_id]["done"]:
                 update_vehicle_timestamp(vehicle_timestamps[track_id], cx, cy, frame_time, top_line, bottom_line, is_above_line)
 
-            # calculate the speed by the shift method only between the blue lines
-            # Calculate the speed using the shift method only between the blue lines
+            # Estimate speed using the shift method (only between the two blue lines)
             speed_transformed = None
-            if is_above_line(cx, cy, blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom) and \
-            not is_above_line(cx, cy, blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top):
+            if is_above_line(cx, cy, *bottom_line) and not is_above_line(cx, cy, *top_line):
                 last_speed = vehicle_speeds_shift[track_id][-1] if vehicle_speeds_shift[track_id] else None
                 speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
-                # If a valid speed is computed, append it to the vehicle's speed list for later averaging
                 if speed_transformed is not None:
                     vehicle_speeds_shift[track_id].append(speed_transformed)
 
-
-            # form the label with both speeds
+            # Compose label
             label_parts = []
             if speed_transformed is not None:
                 label_parts.append(f"T: {speed_transformed:.1f} km/h")
@@ -213,7 +164,6 @@ def main():
             confidences.append(1.0)
             class_ids.append(2)
 
-        # draw the boxes and labels
         if tracked_boxes:
             detections_sv = sv.Detections(
                 xyxy=np.array(tracked_boxes),
@@ -223,31 +173,32 @@ def main():
             frame = box_annotator.annotate(scene=frame, detections=detections_sv)
             frame = label_annotator.annotate(scene=frame, detections=detections_sv, labels=labels)
 
+        # Draw speed lines and ROI
         cv2.line(frame, (blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top), (255, 0, 0), blue_line_thickness)
         cv2.line(frame, (blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom), (255, 0, 0), blue_line_thickness)
         cv2.polylines(frame, [pts], isClosed=True, color=(0, 0, 255), thickness=2)
 
         out.write(frame)
 
-
-    # output the final speeds (line method)
-    print("\n Final average speed (lines method):")
+    # Output final average speeds (line-based)
+    print("\nFinal average speed (lines method):")
     for vehicle_id, times in vehicle_timestamps.items():
         speed_kmh = compute_speed_line(times, distance_m)
         if speed_kmh is not None:
-            print(f" Car {vehicle_id}: speed: {speed_kmh:.2f} km/h")
+            print(f"Car {vehicle_id}: speed: {speed_kmh:.2f} km/h")
 
-    # Output the final speeds (shift method)
-    print("\n Final average speed (shift method):")
+    # Output final average speeds (shift method)
+    print("\nFinal average speed (shift method):")
     for vehicle_id, speeds in vehicle_speeds_shift.items():
         if speeds:
             avg_speed_shift = sum(speeds) / len(speeds)
-            print(f" Car {vehicle_id}: speed: {avg_speed_shift:.2f} km/h")
+            print(f"Car {vehicle_id}: speed: {avg_speed_shift:.2f} km/h")
 
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    print(f" Video saved as {output_path}")
+    print(f"Video saved as {output_path}")
+
 
 if __name__ == "__main__":
     main()

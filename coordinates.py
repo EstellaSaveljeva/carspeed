@@ -22,7 +22,7 @@ def get_coordinates(video_path):
         x2, y2 = 4900, 3000     # Augšējais kreisais stūris
         x3, y3 = 7950, 5500     # Kreisais apakšējais stūris
         x4, y4 = 11000, 4800    # Apakšējais labais stūris
-        distance_m = 60
+        distance_m =65
 
         # blue
         blue_x1_top, blue_y1_top = 4950, 3100           # Augšējais kreisais stūris

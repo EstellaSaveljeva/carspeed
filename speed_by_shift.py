@@ -22,7 +22,7 @@ def compute_speed_shift(real_y_history, fps, last_speed=None):
         speed_transformed = (total_distance / time_delta) * 3.6  # convert to km/h
         
         # Limit sudden changes in speed (no more than 30% change)
-        if last_speed is not None and abs(speed_transformed - last_speed) > last_speed * 0.3:
+        if last_speed is not None and abs(speed_transformed - last_speed) > last_speed * 0.1:
             speed_transformed = last_speed
         
         return speed_transformed
