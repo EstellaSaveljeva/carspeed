@@ -27,7 +27,7 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     model = load_model("yolo11x.pt")
-    video_path = "50kmh_prieksa_jaunolaine.mov"
+    video_path = "70kmh_prieksa_jaunolaine.mov"
     cap = setup_video(video_path)
 
     try:
@@ -136,7 +136,8 @@ def main():
 
             # Update timestamps for line-based speed estimation
             if track_id not in vehicle_timestamps:
-                vehicle_timestamps[track_id] = {"start": None, "end": None, "last_position": cy, "done": False}
+                vehicle_timestamps[track_id] = {"start": None, "end": None, "last_position": None, "done": False}
+
 
             if not vehicle_timestamps[track_id]["done"]:
                 update_vehicle_timestamp(vehicle_timestamps[track_id], cx, cy, frame_time, top_line, bottom_line, is_above_line)
