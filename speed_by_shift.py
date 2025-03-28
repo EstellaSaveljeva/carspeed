@@ -1,17 +1,15 @@
 import numpy as np
 
 def compute_speed_shift(real_y_history, fps, last_speed=None):
-    """
-    Вычисляет скорость на основе истории точек в реальных координатах.
 
-    Parameters:
-        real_y_history (iterable): Список или deque с точками (x, y) в реальных координатах.
-        fps (int): Частота кадров видео.
-        last_speed (float, optional): Предыдущая скорость для ограничения резких скачков.
+    # Calculates velocity based on point history in real coordinates.
+    # Parameters:
+    #     real_y_history (iterable): List or deque with points (x, y) in real coordinates.
+    #     fps (int): Video frame rate.
+    #     last_speed (float, optional): Previous speed to limit sudden jumps.
+    # Returns:
+    #     Float or None: Speed in km/h or None if there is not enough data.
 
-    Returns:
-        float или None: Скорость в км/ч или None, если данных недостаточно.
-    """
     if len(real_y_history) < 2:
         return None
 
@@ -21,9 +19,9 @@ def compute_speed_shift(real_y_history, fps, last_speed=None):
     time_delta = len(real_y_history) / fps
 
     if time_delta > 0 and total_distance > 0.1:
-        speed_transformed = (total_distance / time_delta) * 3.6  # перевод в км/ч
+        speed_transformed = (total_distance / time_delta) * 3.6  # convert to km/h
         
-        # Ограничение резких скачков скорости (не более 30% изменения)
+        # Limit sudden changes in speed (no more than 30% change)
         if last_speed is not None and abs(speed_transformed - last_speed) > last_speed * 0.3:
             speed_transformed = last_speed
         
