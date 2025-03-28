@@ -22,7 +22,7 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     # uploads the YOLO model
-    model = YOLO("yolo11l.pt")
+    model = YOLO("yolo11x.pt")
 
     # uploads the video
     video_path = "50kmh_prieksa_jaunolaine.mov"
@@ -187,11 +187,16 @@ def main():
                 update_vehicle_timestamp(vehicle_timestamps[track_id], cx, cy, frame_time, top_line, bottom_line, is_above_line)
 
             # calculate the speed by the shift method only between the blue lines
+            # Calculate the speed using the shift method only between the blue lines
             speed_transformed = None
             if is_above_line(cx, cy, blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom) and \
             not is_above_line(cx, cy, blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top):
                 last_speed = vehicle_speeds_shift[track_id][-1] if vehicle_speeds_shift[track_id] else None
                 speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
+                # If a valid speed is computed, append it to the vehicle's speed list for later averaging
+                if speed_transformed is not None:
+                    vehicle_speeds_shift[track_id].append(speed_transformed)
+
 
             # form the label with both speeds
             label_parts = []
@@ -224,24 +229,25 @@ def main():
 
         out.write(frame)
 
+
     # output the final speeds (line method)
     print("\n Final average speed (lines method):")
     for vehicle_id, times in vehicle_timestamps.items():
         speed_kmh = compute_speed_line(times, distance_m)
         if speed_kmh is not None:
-            print(f"Car {vehicle_id}: speed: {speed_kmh:.2f} km/h")
+            print(f" Car {vehicle_id}: speed: {speed_kmh:.2f} km/h")
 
     # Output the final speeds (shift method)
     print("\n Final average speed (shift method):")
     for vehicle_id, speeds in vehicle_speeds_shift.items():
         if speeds:
             avg_speed_shift = sum(speeds) / len(speeds)
-            print(f"Car {vehicle_id}: speed: {avg_speed_shift:.2f} km/h")
+            print(f" Car {vehicle_id}: speed: {avg_speed_shift:.2f} km/h")
 
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    print(f" Video saved to {output_path}")
+    print(f" Video saved as {output_path}")
 
 if __name__ == "__main__":
     main()
