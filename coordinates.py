@@ -26,8 +26,8 @@ def get_coordinates(video_path):
 
         # blue
         blue_x1_top, blue_y1_top = 4900, 3090           # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 6200, 3050           # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 7000, 6800     # Kreisais apakšējais stūris
+        blue_x2_top, blue_y2_top = 5900, 3050           # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 7400, 6300     # Kreisais apakšējais stūris
         blue_x2_bottom, blue_y2_bottom = 11000, 4500    # Apakšējais labais stūris
 
         blue_line_thickness = 3
@@ -68,14 +68,14 @@ def get_coordinates(video_path):
         # red
         x1, y1 = 6000, 2900     # Augšējais labais stūris
         x2, y2 = 5650, 2900     # Augšējais kreisais stūris
-        x3, y3 = 400, 5800      # Kreisais apakšējais stūris
+        x3, y3 = 200, 5800      # Kreisais apakšējais stūris
         x4, y4 = 6900, 6000     # Apakšējais labais stūris
         distance_m = 45
 
         # blue
-        blue_x1_top, blue_y1_top = 4900, 3200           # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 6100, 3200           # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 900, 5550     # Kreisais apakšējais stūris
+        blue_x1_top, blue_y1_top = 4900, 3300           # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 6100, 3300           # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 400, 5550     # Kreisais apakšējais stūris
         blue_x2_bottom, blue_y2_bottom = 6900, 5700    # Apakšējais labais stūris
 
         blue_line_thickness = 3
@@ -100,14 +100,14 @@ def get_coordinates(video_path):
         # red
         x1, y1 = 6400, 3100     # Augšējais labais stūris
         x2, y2 = 5500, 3100     # Augšējais Kreisais stūris
-        x3, y3 = 400, 5700     # Apakšējais Kreisais stūris
+        x3, y3 = 200, 5700     # Apakšējais Kreisais stūris
         x4, y4 = 6600, 6200    # labais apakšējais stūris
         distance_m =45
 
         # blue
         blue_x1_top, blue_y1_top = 5000, 3350           # Augšējais kreisais stūris
         blue_x2_top, blue_y2_top = 6400, 3400           # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 850, 5400     # Kreisais apakšējais stūris
+        blue_x1_bottom, blue_y1_bottom = 400, 5400     # Kreisais apakšējais stūris
         blue_x2_bottom, blue_y2_bottom = 6500, 5800    # Apakšējais labais stūris
 
         blue_line_thickness = 3

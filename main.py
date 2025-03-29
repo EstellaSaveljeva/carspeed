@@ -27,7 +27,7 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     model = load_model("yolo11x.pt")
-    video_path = "70kmh_prieksa_jaunolaine.mov"
+    video_path = "80kmh_ropazi.mov"
     cap = setup_video(video_path)
 
     try:
@@ -97,6 +97,7 @@ def main():
     vehicle_timestamps = {}
     vehicle_speeds_shift = defaultdict(list)
     real_y_history = defaultdict(lambda: deque(maxlen=int(fps)))
+    
 
     top_line = (blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top)
     bottom_line = (blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom)
@@ -127,8 +128,8 @@ def main():
 
             track_id = track.track_id
             l, t, r, b = map(int, track.to_ltrb())
-            cx = (l + r) // 2
-            cy = b
+            cx = (l + r) // 2 # Center x-coordinate
+            cy = b  # Bottom y-coordinate
 
             # Transform pixel coordinates to real-world coordinates
             real_point = transform_point(cx, cy, matrix)
@@ -142,6 +143,7 @@ def main():
             if not vehicle_timestamps[track_id]["done"]:
                 update_vehicle_timestamp(vehicle_timestamps[track_id], cx, cy, frame_time, top_line, bottom_line, is_above_line)
 
+            
             # Estimate speed using the shift method (only between the two blue lines)
             speed_transformed = None
             if is_above_line(cx, cy, *bottom_line) and not is_above_line(cx, cy, *top_line):
