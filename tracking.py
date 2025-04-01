@@ -39,3 +39,10 @@ def get_detections_in_roi(results, polygon_pts):
 def transform_point(cx, cy, matrix):
     point = np.array([[[cx, cy]]], dtype=np.float32)
     return cv2.perspectiveTransform(point, matrix)[0][0]
+
+def moving_average_position(position_history, smooth_size=10):
+    # If less frames are accumulated than required for the window, we use the existing ones
+    window = list(position_history)[-smooth_size:] if len(position_history) >= smooth_size else list(position_history)
+    avg_x = sum(pos[0] for pos in window) / len(window)
+    avg_y = sum(pos[1] for pos in window) / len(window)
+    return avg_x, avg_y
