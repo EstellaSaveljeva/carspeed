@@ -47,8 +47,8 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 
 def main():
-    model = load_model("yolo11x.pt")
-    video_path = "70kmh_prieksa_jaunolaine.mov"
+    model = load_model("yolo11m.pt")
+    video_path = "80kmh_ropazi.mov"
     cap = setup_video(video_path)
 
     try:
