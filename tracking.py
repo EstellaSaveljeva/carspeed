@@ -1,11 +1,19 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import torch
 from deep_sort_realtime.deepsort_tracker import DeepSort
 
 # Load YOLO model
-def load_model(model_path="yolo11x.pt"):
-    return YOLO(model_path)
+# def load_model(model_path="yolo11x.pt"):
+#     return YOLO(model_path)
+def load_model(model_path="yolo11x.pt", use_gpu=True):
+    model = YOLO(model_path)
+    if use_gpu and torch.cuda.is_available():
+        model.to("cuda")
+    else:
+        model.to("cpu")
+    return model
 
 # Initialize DeepSort tracker
 def initialize_tracker():

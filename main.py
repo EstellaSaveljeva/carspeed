@@ -15,42 +15,36 @@ from tracking import (
     get_detections_in_roi, transform_point,
     moving_average_position
 )
+# output of the tracked object to a txt file was necessary to check in some places problems with object detection.
+# # define the output file path
+# output_txt_path = "yolo_output.txt"
+# # Clear the file at the start of the program
+# with open(output_txt_path, "w") as f:
+#     f.write("")
 
-# Add this at the beginning of the file to define the output file path
-output_txt_path = "yolo_output.txt"
-
-# Clear the file at the start of the program
-with open(output_txt_path, "w") as f:
-    f.write("")
-
-
-# def is_above_line(cx, cy, x1, y1, x2, y2):
-#     if x1 == x2:
-#         return cx <= x1
-#     m = (y2 - y1) / (x2 - x1)
-#     b = y1 - m * x1
-#     y_on_line = m * cx + b
-#     return cy <= y_on_line
-
+# function to determine whether the machine is above or below one of the blue lines
 def is_above_line(cx, cy, x1, y1, x2, y2):
    
-    # Vector AB
-    ABx = x2 - x1 #blue line
+    # Vector AB, blue line
+    ABx = x2 - x1 
     ABy = y2 - y1
-    # Vector AC
-    ACx = cx - x1 # line to car vector
+    # Vector ACб line to car vector
+    ACx = cx - x1  
     ACy = cy - y1
 
     cross = ABx * ACy - ABy * ACx
-    # if result <0, point is above the line
+    # if result <0, car point is above the line
     return cross < 0
 
 
 def main():
-    model = load_model("yolo11m.pt")
-    video_path = "80kmh_ropazi.mov"
+    # load YOLO model
+    model = load_model("yolo11m.pt", use_gpu=True)
+    # load video by name
+    video_path = "70kmh_prieksa_jaunolaine.mov"
     cap = setup_video(video_path)
 
+    # get coordinates of the blue lines and region of interest in the video
     try:
         (x1, y1, x2, y2, x3, y3, x4, y4, distance_m,
          blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top,
@@ -67,12 +61,14 @@ def main():
         cap.release()
         return
 
+    # get video parameters
     frame_width, frame_height, fps = get_video_params(cap)
     scale, new_width, new_height = calculate_scaling(frame_width, frame_height)
+    # create video writer for output video
     output_path = "output.mp4"
     out = create_video_writer(output_path, 'mp4v', fps, (frame_width, frame_height))
 
-    # Scale coordinates
+    # Scale coordinates to the original video size
     x1, x2, x3, x4 = int(x1 * scale), int(x2 * scale), int(x3 * scale), int(x4 * scale)
     y1, y2, y3, y4 = int(y1 * scale), int(y2 * scale), int(y3 * scale), int(y4 * scale)
     blue_x1_top, blue_x2_top = int(blue_x1_top * scale), int(blue_x2_top * scale)
@@ -80,14 +76,15 @@ def main():
     blue_x1_bottom, blue_x2_bottom = int(blue_x1_bottom * scale), int(blue_x2_bottom * scale)
     blue_y1_bottom, blue_y2_bottom = int(blue_y1_bottom * scale), int(blue_y2_bottom * scale)
 
-    # Perspective transformation matrix
+    # Perspective transformation matrix for speed by shift method
+    # Define the source points for the perspective transformation
     src = np.array([
         [blue_x1_top, blue_y1_top],
         [blue_x2_top, blue_y2_top],
         [blue_x1_bottom, blue_y1_bottom],
         [blue_x2_bottom, blue_y2_bottom]
     ], dtype=np.float32)
-
+    
     dst = np.array([
         [0, 0],
         [6, 0],
@@ -98,98 +95,106 @@ def main():
     matrix = cv2.getPerspectiveTransform(src, dst)
     pts = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]], np.int32)
 
-    # Show first frame with ROI and speed lines
-    frame_with_lines = draw_initial_frame(
-        frame,
-        pts,
-        ((blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top)),
-        ((blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom)),
-        blue_line_thickness
-    )
-    resized_frame = cv2.resize(frame_with_lines, (new_width, new_height))
-    cv2.imshow("First frame", resized_frame)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # #shows the first frame with the blue lines and ROI to check the correctness of the coordinates
+    # frame_with_lines = draw_initial_frame(
+    #     frame,
+    #     pts,
+    #     ((blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top)),
+    #     ((blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom)),
+    #     blue_line_thickness
+    # )
+    # 
+    # resized_frame = cv2.resize(frame_with_lines, (new_width, new_height))
+    # cv2.imshow("First frame", resized_frame)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
+    # initialize the annotators for drawing boxes and labels
     box_annotator = sv.BoxAnnotator(color=sv.Color.GREEN, thickness=2)
     label_annotator = sv.LabelAnnotator(text_color=sv.Color.BLACK)
 
+    # initialize the tracker
     tracker = initialize_tracker()
+    # initialize the vehicle timestamps and speeds
     vehicle_timestamps = {}
     vehicle_speeds_shift = defaultdict(list)
-    
+    # y_history for real-world coordinates
     real_y_history = defaultdict(lambda: deque(maxlen=int(fps)))
     
-
+    # top and bottom lines for speed estimation
     top_line = (blue_x1_top, blue_y1_top, blue_x2_top, blue_y2_top)
     bottom_line = (blue_x1_bottom, blue_y1_bottom, blue_x2_bottom, blue_y2_bottom)
 
     frame_count = 0
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
+    # Process the video frame by frame
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-
+        # time of current frame in seconds
         frame_time = frame_count / fps
         frame_count += 1
 
+        # yolo model detects objects in the region of interest and deepsort tracks them
         results = model(frame)
         boxes_for_tracking = get_detections_in_roi(results, pts)
         tracks = tracker.update_tracks(boxes_for_tracking, frame=frame)
-
+        # draws labels and boxes on the frame
         tracked_boxes = []
         confidences = []
         class_ids = []
         labels = []
 
+        # Iterate through the detected tracks
         for track in tracks:
             if not track.is_confirmed():
                 continue
-
+            # get the bounding box bottom center coordinates and track ID
             track_id = track.track_id
             l, t, r, b = map(int, track.to_ltrb())
             cx = (l + r) // 2 # Center x-coordinate
             cy = b  # Bottom y-coordinate
 
-            # Вычисление результатов для проверки пересечения
+            # check if the center of the bounding box is above or below the blue lines
             above_top = is_above_line(cx, cy, *top_line)
             above_bottom = is_above_line(cx, cy, *bottom_line)
 
-            # Рисуем точку в центре (cx, cy)
-            cv2.circle(frame, (cx, cy), radius=5, color=(0, 255, 255), thickness=-1)  # Жёлтая точка
+            # draw a circle at the center of the bounding box
+            cv2.circle(frame, (cx, cy), radius=5, color=(0, 255, 255), thickness=-1)  
 
-            # Выводим текстовые метки рядом с точкой
+            # write true/false about "above the line"
             debug_text_top = f"Above top: {above_top}"
             debug_text_bottom = f"Above bottom: {above_bottom}"
             cv2.putText(frame, debug_text_top, (cx + 10, cy - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.putText(frame, debug_text_bottom, (cx + 10, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-            # Write YOLO output to the text file
-            with open(output_txt_path, "a") as f:
-                f.write(f"Frame {frame_count}, Track ID {track_id}, BBox: ({l}, {t}, {r}, {b}), Confidence: 1.0, Class ID: 2\n")
+            # # Write YOLO models detections output to the text file
+            # with open(output_txt_path, "a") as f:
+            #     f.write(f"Frame {frame_count}, Track ID {track_id}, BBox: ({l}, {t}, {r}, {b}), Confidence: 1.0, Class ID: 2\n")
 
-            # Transform pixel coordinates to real-world coordinates
+            # Transform pixel coordinates to real-world coordinates for speed by shift method
             real_point = transform_point(cx, cy, matrix)
             real_y_history[track_id].append(real_point)
 
             # Calculate the moving average of the recent positions for smoother coordinates
+            # Use the last 10 frames for moving average, in case of no detections
             moving_avg = moving_average_position(real_y_history[track_id], smooth_size=10)
             if moving_avg is not None:
                 avg_cx, avg_cy = moving_avg
             else:
-                avg_cx, avg_cy = cx, cy  # Fallback to current coordinates if insufficient data
+                avg_cx, avg_cy = cx, cy  # use current coordinates if no history
 
             # Update timestamps for line-based speed estimation
+            # Check if the vehicle is above the top line and below the bottom line
             if track_id not in vehicle_timestamps:
                 vehicle_timestamps[track_id] = {"start": None, "end": None, "last_position": None, "done": False}
 
-
+            # Check if the vehicle is below the bottom line
             if not vehicle_timestamps[track_id]["done"]:
                 update_vehicle_timestamp(vehicle_timestamps[track_id], cx, cy, frame_time, top_line, bottom_line, is_above_line)
 
-            
             # Estimate speed using the shift method (only between the two blue lines)
             speed_transformed = None
             if is_above_line(cx, cy, *bottom_line) and not is_above_line(cx, cy, *top_line):
@@ -197,9 +202,6 @@ def main():
                 speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
                 if speed_transformed is not None:
                     vehicle_speeds_shift[track_id].append(speed_transformed)
-            # Предположим, что real_position_history хранит реальные координаты или пиксельные координаты объекта.
-
-
 
             # Use the smoothed coordinates to check if the vehicle is between the two blue lines
             if is_above_line(avg_cx, avg_cy, *bottom_line) and not is_above_line(avg_cx, avg_cy, *top_line):
