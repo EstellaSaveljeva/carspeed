@@ -39,7 +39,7 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     # load YOLO model
-    model = load_model("yolo11m.pt", use_gpu=True)
+    model = load_model("yolo11x.pt", use_gpu=True)
     # load video by name
     video_path = "70kmh_prieksa_jaunolaine.mov"
     cap = setup_video(video_path)

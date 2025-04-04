@@ -15,6 +15,7 @@ def load_model(model_path="", use_gpu=True):
 
 # Initialize DeepSort tracker
 def initialize_tracker():
+    # max_age is the maximum number of frames to keep a track alive without detection
     return DeepSort(max_age=30)
 
 # Get detections in the region of interest
@@ -42,7 +43,7 @@ def get_detections_in_roi(results, polygon_pts):
             detections.append(([x_min, y_min, x_max - x_min, y_max - y_min], conf, 'car'))
     return detections
 
-# Transform pixel coordinates to real-world coordinates
+# function transforms the pixel coordinates to real-world coordinates using the perspective transformation matrix.
 def transform_point(cx, cy, matrix):
     point = np.array([[[cx, cy]]], dtype=np.float32)
     return cv2.perspectiveTransform(point, matrix)[0][0]
