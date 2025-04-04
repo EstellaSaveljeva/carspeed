@@ -16,7 +16,7 @@ from tracking import (
     moving_average_position
 )
 # output of the tracked object to a txt file was necessary to check in some places problems with object detection.
-# # define the output file path
+# # define the output.txt file path
 # output_txt_path = "yolo_output.txt"
 # # Clear the file at the start of the program
 # with open(output_txt_path, "w") as f:
@@ -197,6 +197,7 @@ def main():
 
             # Estimate speed using the shift method (only between the two blue lines)
             speed_transformed = None
+            # Check if the vehicle is between the two blue lines using both the original
             if is_above_line(cx, cy, *bottom_line) and not is_above_line(cx, cy, *top_line):
                 last_speed = vehicle_speeds_shift[track_id][-1] if vehicle_speeds_shift[track_id] else None
                 speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
@@ -209,11 +210,7 @@ def main():
                 speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
                 if speed_transformed is not None:
                     vehicle_speeds_shift[track_id].append(speed_transformed)
-
-            if not is_above_line(avg_cx, avg_cy, *top_line):
-                print(f"Car {track_id} is under the top line.")
-
-
+        
             # Compose label
             label_parts = []
             if speed_transformed is not None:
@@ -227,8 +224,9 @@ def main():
             labels.append(" | ".join(label_parts))
             tracked_boxes.append([l, t, r, b])
             confidences.append(1.0)
-            class_ids.append(2)
+            class_ids.append(2) # class ID 2 is for cars
 
+        # Draw the tracked boxes and labels on the frame
         if tracked_boxes:
             detections_sv = sv.Detections(
                 xyxy=np.array(tracked_boxes),
@@ -243,16 +241,17 @@ def main():
         cv2.line(frame, (blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom), (255, 0, 0), blue_line_thickness)
         cv2.polylines(frame, [pts], isClosed=True, color=(0, 0, 255), thickness=2)
 
+        # Write the frame to the output video
         out.write(frame)
 
-    # Output final average speeds (line-based)
+    # terminal output final average speeds (line-based)
     print("\nFinal average speed (lines method):")
     for vehicle_id, times in vehicle_timestamps.items():
         speed_kmh = compute_speed_line(times, distance_m)
         if speed_kmh is not None:
             print(f"Car {vehicle_id}: speed: {speed_kmh:.2f} km/h")
 
-    # Output final average speeds (shift method)
+    # terminal output final average speeds (shift method)
     print("\nFinal average speed (shift method):")
     for vehicle_id, speeds in vehicle_speeds_shift.items():
         if speeds:

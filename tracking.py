@@ -5,9 +5,7 @@ import torch
 from deep_sort_realtime.deepsort_tracker import DeepSort
 
 # Load YOLO model
-# def load_model(model_path="yolo11x.pt"):
-#     return YOLO(model_path)
-def load_model(model_path="yolo11x.pt", use_gpu=True):
+def load_model(model_path="", use_gpu=True):
     model = YOLO(model_path)
     if use_gpu and torch.cuda.is_available():
         model.to("cuda")
@@ -24,6 +22,7 @@ def get_detections_in_roi(results, polygon_pts):
     detections = []
     for result in results:
         for box in result.boxes:
+            # Get bounding box coordinates and class
             x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
             conf = box.conf[0].item()
             cls = int(box.cls[0].item())
@@ -48,6 +47,8 @@ def transform_point(cx, cy, matrix):
     point = np.array([[[cx, cy]]], dtype=np.float32)
     return cv2.perspectiveTransform(point, matrix)[0][0]
 
+# Calculate moving average position of the detected object
+# function takes a history of positions and returns the average position over the last 'smooth_size' frames.
 def moving_average_position(position_history, smooth_size=10):
     # If less frames are accumulated than required for the window, we use the existing ones
     window = list(position_history)[-smooth_size:] if len(position_history) >= smooth_size else list(position_history)
