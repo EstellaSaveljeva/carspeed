@@ -1,6 +1,6 @@
 import numpy as np
 
-def compute_speed_shift(real_y_history, fps, last_speed=None):
+def compute_speed_shift(real_y_history, fps, last_speed=None, y_min=0, y_max=None):
 
     # Calculates speed based on point history in real coordinates.
     #     real_y_history (iterable): List or deque with points (x, y) in real coordinates.
@@ -21,11 +21,25 @@ def compute_speed_shift(real_y_history, fps, last_speed=None):
     time_delta = len(real_y_history) / fps
     # Calculate speed in km/h
     if time_delta > 0 and total_distance > 0.1:
-        speed_transformed = (total_distance / time_delta) * 3.6  # convert to km/h
-        
-        # Limit sudden changes in speed (no more than 10% change)
+        # Get last known y-position
+        latest_y = real_y_history[-1][1]
+
+
+        # Normalize position along the road
+        y_norm = (latest_y - y_min) / (y_max - y_min)
+        y_norm = np.clip(y_norm, 0.0, 1.0)
+
+        # Perspective compensation factor
+        compensation = 1 + (0.5 - y_norm) * 0.2  
+
+        # Calculate speed with compensation
+        speed_transformed = (total_distance / time_delta) * 3.6 * compensation
+
+        # Prevent large jumps
         if last_speed is not None and abs(speed_transformed - last_speed) > last_speed * 0.1:
             speed_transformed = last_speed
-        
+
         return speed_transformed
+
     return None
+ 

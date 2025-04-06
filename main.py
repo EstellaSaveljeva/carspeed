@@ -39,9 +39,9 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     # load YOLO model
-    model = load_model("yolo11x.pt", use_gpu=True)
+    model = load_model("yolo11l.pt", use_gpu=True)
     # load video by name
-    video_path = "70kmh_ropazi.mov"
+    video_path = "50kmh_mugur_jaunolaine.mov"
     cap = setup_video(video_path)
 
     # get coordinates of the blue lines and region of interest in the video
@@ -77,7 +77,6 @@ def main():
     blue_y1_bottom, blue_y2_bottom = int(blue_y1_bottom * scale), int(blue_y2_bottom * scale)
 
     # Perspective transformation matrix for speed by shift method
-    # Define the source points for the perspective transformation
     src = np.array([
         [blue_x1_top, blue_y1_top],
         [blue_x2_top, blue_y2_top],
@@ -127,6 +126,12 @@ def main():
 
     frame_count = 0
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+    # Initialize the vehicle speed min and max dictionaries
+    # to know the min and max speed by shift
+    vehicle_speed_min = defaultdict(lambda: float('inf'))
+    vehicle_speed_max = defaultdict(lambda: float('-inf'))
+
 
     # Process the video frame by frame
     while cap.isOpened():
@@ -200,17 +205,23 @@ def main():
             # Check if the vehicle is between the two blue lines using both the original coordinates
             if is_above_line(cx, cy, *bottom_line) and not is_above_line(cx, cy, *top_line):
                 last_speed = vehicle_speeds_shift[track_id][-1] if vehicle_speeds_shift[track_id] else None
-                speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
+                speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed, y_min=0, y_max=distance_m)
                 if speed_transformed is not None:
                     vehicle_speeds_shift[track_id].append(speed_transformed)
+                    vehicle_speed_min[track_id] = min(vehicle_speed_min[track_id], speed_transformed)
+                    vehicle_speed_max[track_id] = max(vehicle_speed_max[track_id], speed_transformed)
+
 
             # Use the smoothed coordinates to check if the vehicle is between the two blue lines
             if is_above_line(avg_cx, avg_cy, *bottom_line) and not is_above_line(avg_cx, avg_cy, *top_line):
                 last_speed = vehicle_speeds_shift[track_id][-1] if vehicle_speeds_shift[track_id] else None
-                speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
+                speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed, y_min=0, y_max=distance_m)
                 if speed_transformed is not None:
                     vehicle_speeds_shift[track_id].append(speed_transformed)
-        
+                    vehicle_speed_min[track_id] = min(vehicle_speed_min[track_id], speed_transformed)
+                    vehicle_speed_max[track_id] = max(vehicle_speed_max[track_id], speed_transformed)
+
+
             # Compose label
             label_parts = []
             if speed_transformed is not None:
@@ -256,7 +267,11 @@ def main():
     for vehicle_id, speeds in vehicle_speeds_shift.items():
         if speeds:
             avg_speed_shift = sum(speeds) / len(speeds)
+            min_speed = vehicle_speed_min[vehicle_id]
+            max_speed = vehicle_speed_max[vehicle_id]
             print(f"Car {vehicle_id}: speed: {avg_speed_shift:.2f} km/h")
+            print(f"Car {vehicle_id}: min speed: {min_speed:.2f} km/h")
+            print(f"Car {vehicle_id}: max speed: {max_speed:.2f} km/h")
 
     cap.release()
     out.release()
