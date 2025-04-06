@@ -41,7 +41,7 @@ def main():
     # load YOLO model
     model = load_model("yolo11x.pt", use_gpu=True)
     # load video by name
-    video_path = "70kmh_prieksa_jaunolaine.mov"
+    video_path = "70kmh_ropazi.mov"
     cap = setup_video(video_path)
 
     # get coordinates of the blue lines and region of interest in the video
@@ -197,7 +197,7 @@ def main():
 
             # Estimate speed using the shift method (only between the two blue lines)
             speed_transformed = None
-            # Check if the vehicle is between the two blue lines using both the original
+            # Check if the vehicle is between the two blue lines using both the original coordinates
             if is_above_line(cx, cy, *bottom_line) and not is_above_line(cx, cy, *top_line):
                 last_speed = vehicle_speeds_shift[track_id][-1] if vehicle_speeds_shift[track_id] else None
                 speed_transformed = compute_speed_shift(real_y_history[track_id], fps, last_speed)
