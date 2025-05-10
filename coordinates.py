@@ -133,19 +133,19 @@ def get_coordinates(video_path):
 
     elif "50kmh_2k_48fps" in video_path.lower():
         # red
-        x1, y1 = 1475, 680   # Augšējais labais stūris
-        x2, y2 = 1315, 680   # Augšējais kreisais stūris
-        x3, y3 = -50, 1400   # Kreisais apakšējais stūris
-        x4, y4 = 1600, 1500  # Apakšējais labais stūris
-        distance_m = 25
+        x1, y1 = 2850, 1300   # Augšējais labais stūris
+        x2, y2 = 2750, 1300   # Augšējais kreisais stūris
+        x3, y3 = 50, 2500   # Kreisais apakšējais stūris
+        x4, y4 = 3200, 3000  # Apakšējais labais stūris
+        distance_m = 23
 
         # blue
-        blue_x1_top, blue_y1_top = 1150, 775         # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 1500, 775         # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 500, 1060   # Kreisais apakšējais stūris
-        blue_x2_bottom, blue_y2_bottom = 1550, 1120  # Apakšējais labais stūris
+        blue_x1_top, blue_y1_top = 2250, 1515        # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 2870, 1545          # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 680, 2000   # Kreisais apakšējais stūris
+        blue_x2_bottom, blue_y2_bottom = 3000, 2250  # Apakšējais labais stūris
 
-        blue_line_thickness = 2
+        blue_line_thickness = 3
     
     elif "50kmh_2k_60fps" in video_path.lower():
         # red
