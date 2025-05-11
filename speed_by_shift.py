@@ -24,13 +24,13 @@ def compute_speed_shift(real_y_history, fps, last_speed=None, y_min=0, y_max=Non
         # Get last known y-position
         latest_y = real_y_history[-1][1]
 
-
         # Normalize position along the road
         y_norm = (latest_y - y_min) / (y_max - y_min)
         y_norm = np.clip(y_norm, 0.0, 1.0)
-
+        
+        k=0.5 # compensation factor for perspective
         # Perspective compensation factor
-        compensation = 1 + (0.5 - y_norm) * 0.2  
+        compensation = 1 + (0.5 - y_norm) * k  
 
         # Calculate speed with compensation
         speed_transformed = (total_distance / time_delta) * 3.6 * compensation
@@ -40,6 +40,5 @@ def compute_speed_shift(real_y_history, fps, last_speed=None, y_min=0, y_max=Non
             speed_transformed = last_speed
 
         return speed_transformed
-
     return None
  
