@@ -39,9 +39,9 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     # load YOLO model
-    model = load_model("yolo11l.pt", use_gpu=True)
+    model = load_model("yolo11x.pt", use_gpu=True)
     # load video by name
-    video_path = "50kmh_mugur_jaunolaine.mov"
+    video_path = "70kmh_1080_24fps.mov"
     cap = setup_video(video_path)
 
     # get coordinates of the blue lines and region of interest in the video
@@ -94,26 +94,26 @@ def main():
     matrix = cv2.getPerspectiveTransform(src, dst)
     pts = np.array([[x1, y1], [x2, y2], [x3, y3], [x4, y4]], np.int32)
 
-    # #shows the first frame with the blue lines and ROI to check the correctness of the coordinates
-    # frame_with_lines = draw_initial_frame(
-    #     frame,
-    #     pts,
-    #     ((blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top)),
-    #     ((blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom)),
-    #     blue_line_thickness
-    # )
-    # 
-    # resized_frame = cv2.resize(frame_with_lines, (new_width, new_height))
-    # cv2.imshow("First frame", resized_frame)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    #shows the first frame with the blue lines and ROI to check the correctness of the coordinates
+    frame_with_lines = draw_initial_frame(
+        frame,
+        pts,
+        ((blue_x1_top, blue_y1_top), (blue_x2_top, blue_y2_top)),
+        ((blue_x1_bottom, blue_y1_bottom), (blue_x2_bottom, blue_y2_bottom)),
+        blue_line_thickness
+    )
+    
+    resized_frame = cv2.resize(frame_with_lines, (new_width, new_height))
+    cv2.imshow("First frame", resized_frame)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     # initialize the annotators for drawing boxes and labels
     box_annotator = sv.BoxAnnotator(color=sv.Color.GREEN, thickness=2)
     label_annotator = sv.LabelAnnotator(text_color=sv.Color.BLACK)
 
     # initialize the tracker
-    tracker = initialize_tracker()
+    tracker = initialize_tracker(fps)
     # initialize the vehicle timestamps and speeds
     vehicle_timestamps = {}
     vehicle_speeds_shift = defaultdict(list)
@@ -255,6 +255,7 @@ def main():
         # Write the frame to the output video
         out.write(frame)
 
+    print(model.info())
     # terminal output final average speeds (line-based)
     print("\nFinal average speed (lines method):")
     for vehicle_id, times in vehicle_timestamps.items():

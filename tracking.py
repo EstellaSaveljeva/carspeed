@@ -14,9 +14,9 @@ def load_model(model_path="", use_gpu=True):
     return model
 
 # Initialize DeepSort tracker
-def initialize_tracker():
+def initialize_tracker(fps):
     # max_age is the maximum number of frames to keep a track alive without detection
-    return DeepSort(max_age=30)
+    return DeepSort(max_age=60)
 
 # Get detections in the region of interest
 def get_detections_in_roi(results, polygon_pts):
