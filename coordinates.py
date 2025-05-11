@@ -212,17 +212,17 @@ def get_coordinates(video_path):
         blue_line_thickness = 3
     elif "50kmh_1080_24fps" in video_path.lower():
  # red
-        x1, y1 = 1475, 700  # Augšējais labais stūris
-        x2, y2 = 1400, 700   # Augšējais kreisais stūris
+        x1, y1 = 1375, 750  # Augšējais labais stūris
+        x2, y2 = 1200, 750   # Augšējais kreisais stūris
         x3, y3 = -100, 1400   # Kreisais apakšējais stūris
         x4, y4 = 1600, 1500  # Apakšējais labais stūris
-        distance_m = 25
+        distance_m = 23
 
         # blue
-        blue_x1_top, blue_y1_top = 1110, 820        # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 1490, 820         # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 500, 1120   # Kreisais apakšējais stūris
-        blue_x2_bottom, blue_y2_bottom = 1550, 1160  # Apakšējais labais stūris
+        blue_x1_top, blue_y1_top = 980, 860        # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 1420, 870         # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 300, 1200   # Kreisais apakšējais stūris
+        blue_x2_bottom, blue_y2_bottom = 1550, 1240  # Apakšējais labais stūris
 
         blue_line_thickness = 2
 
