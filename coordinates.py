@@ -244,65 +244,64 @@ def get_coordinates(video_path):
     
     elif "50kmh_1080_60fps" in video_path.lower():
         # red
-        x1, y1 = 4700, 2900   # Augšējais labais stūris
-        x2, y2 = 4100, 2900   # Augšējais kreisais stūris
-        x3, y3 = 8300, 6450   # Kreisais apakšējais stūris
-        x4, y4 = 12000, 4300  # Apakšējais labais stūris
-        distance_m = 60
+        x1, y1 = 1460, 750  # Augšējais labais stūris
+        x2, y2 = 1380, 750   # Augšējais kreisais stūris
+        x3, y3 = -200, 1400   # Kreisais apakšējais stūris
+        x4, y4 = 1650, 1500  # Apakšējais labais stūris
+        distance_m = 23
 
         # blue
-        blue_x1_top, blue_y1_top = 4300, 3085         # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 5450, 3045         # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 7650, 5850   # Kreisais apakšējais stūris
-        blue_x2_bottom, blue_y2_bottom = 10950, 4150  # Apakšējais labais stūris
+        blue_x1_top, blue_y1_top = 1145, 845        # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 1480, 855         # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 420, 1140   # Kreisais apakšējais stūris
+        blue_x2_bottom, blue_y2_bottom = 1550, 1180  # Apakšējais labais stūris
 
-        blue_line_thickness = 3
-
+        blue_line_thickness = 2
     elif "50kmh_1080_60fps_2car" in video_path.lower():
         # red
-        x1, y1 = 4700, 2900   # Augšējais labais stūris
-        x2, y2 = 4100, 2900   # Augšējais kreisais stūris
-        x3, y3 = 8300, 6450   # Kreisais apakšējais stūris
-        x4, y4 = 12000, 4300  # Apakšējais labais stūris
-        distance_m = 60
+        x1, y1 = 1460, 750  # Augšējais labais stūris
+        x2, y2 = 1380, 750   # Augšējais kreisais stūris
+        x3, y3 = -200, 1400   # Kreisais apakšējais stūris
+        x4, y4 = 1650, 1500  # Apakšējais labais stūris
+        distance_m = 23
 
         # blue
-        blue_x1_top, blue_y1_top = 4300, 3085         # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 5450, 3045         # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 7650, 5850   # Kreisais apakšējais stūris
-        blue_x2_bottom, blue_y2_bottom = 10950, 4150  # Apakšējais labais stūris
+        blue_x1_top, blue_y1_top = 1145, 845        # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 1480, 855         # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 420, 1140   # Kreisais apakšējais stūris
+        blue_x2_bottom, blue_y2_bottom = 1550, 1180  # Apakšējais labais stūris
 
-        blue_line_thickness = 3
+        blue_line_thickness = 2
 
     elif "70kmh_2k_24fps" in video_path.lower():
         # red
-        x1, y1 = 2850, 1300   # Augšējais labais stūris
-        x2, y2 = 2750, 1300   # Augšējais kreisais stūris
-        x3, y3 = 50, 2500   # Kreisais apakšējais stūris
+        x1, y1 = 2700, 1100   # Augšējais labais stūris
+        x2, y2 = 2550, 1100   # Augšējais kreisais stūris
+        x3, y3 = -500, 2400   # Kreisais apakšējais stūris
         x4, y4 = 3200, 3000  # Apakšējais labais stūris
         distance_m = 23
 
         # blue
-        blue_x1_top, blue_y1_top = 2250, 1515        # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 2870, 1545          # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 680, 2000   # Kreisais apakšējais stūris
-        blue_x2_bottom, blue_y2_bottom = 3000, 2250  # Apakšējais labais stūris
+        blue_x1_top, blue_y1_top = 2050, 1310        # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 2800, 1340          # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 670, 1920   # Kreisais apakšējais stūris
+        blue_x2_bottom, blue_y2_bottom = 3000, 2170  # Apakšējais labais stūris
 
         blue_line_thickness = 3
 
     elif "70kmh_2k_48fps" in video_path.lower():
         # red
-        x1, y1 = 4700, 2900   # Augšējais labais stūris
-        x2, y2 = 4100, 2900   # Augšējais kreisais stūris
-        x3, y3 = 8300, 6450   # Kreisais apakšējais stūris
-        x4, y4 = 12000, 4300  # Apakšējais labais stūris
-        distance_m = 60
+        x1, y1 = 2710, 1135   # Augšējais labais stūris
+        x2, y2 = 2550, 1135   # Augšējais kreisais stūris
+        x3, y3 = -500, 2400   # Kreisais apakšējais stūris
+        x4, y4 = 3200, 3000  # Apakšējais labais stūris
+        distance_m = 23
 
         # blue
-        blue_x1_top, blue_y1_top = 4300, 3085         # Augšējais kreisais stūris
-        blue_x2_top, blue_y2_top = 5450, 3045         # Augšējais labais stūris
-        blue_x1_bottom, blue_y1_bottom = 7650, 5850   # Kreisais apakšējais stūris
-        blue_x2_bottom, blue_y2_bottom = 10950, 4150  # Apakšējais labais stūris
+        blue_x1_top, blue_y1_top = 2000, 1363        # Augšējais kreisais stūris
+        blue_x2_top, blue_y2_top = 2800, 1393          # Augšējais labais stūris
+        blue_x1_bottom, blue_y1_bottom = 620, 1940   # Kreisais apakšējais stūris
+        blue_x2_bottom, blue_y2_bottom = 3000, 2190  # Apakšējais labais stūris
 
         blue_line_thickness = 3
 
