@@ -39,9 +39,9 @@ def is_above_line(cx, cy, x1, y1, x2, y2):
 
 def main():
     # load YOLO model
-    model = load_model("yolo11x.pt", use_gpu=True)
+    model = load_model("last.pt", use_gpu=True)
     # load video by name
-    video_path = "70kmh_1080_24fps.mov"
+    video_path = "60kmh_2k_24fps.mov"
     cap = setup_video(video_path)
 
     # get coordinates of the blue lines and region of interest in the video
@@ -143,7 +143,19 @@ def main():
         frame_count += 1
 
         # yolo model detects objects in the region of interest and deepsort tracks them
-        results = model(frame)
+        #results = model(frame)
+        results = model.predict(frame)[0]
+        # # Отрисовка рамок из YOLO
+        # for box, cls, conf in zip(results.boxes.xyxy.cpu().numpy(),
+        #                         results.boxes.cls.cpu().numpy(),
+        #                         results.boxes.conf.cpu().numpy()):
+        #     x1, y1, x2, y2 = map(int, box)
+        #     label = f"car {conf:.2f}"
+        #     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 2)  # жёлтый
+        #     cv2.putText(frame, label, (x1, y1 - 10),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+
+
         boxes_for_tracking = get_detections_in_roi(results, pts)
         tracks = tracker.update_tracks(boxes_for_tracking, frame=frame)
         # draws labels and boxes on the frame
@@ -235,10 +247,12 @@ def main():
             labels.append(" | ".join(label_parts))
             tracked_boxes.append([l, t, r, b])
             confidences.append(1.0)
-            class_ids.append(2) # class ID 2 is for cars
+            class_ids.append(0) # class ID 2 is for cars for pre-trained yolo model. Class ID 0 is for cars for custom model
 
         # Draw the tracked boxes and labels on the frame
         if tracked_boxes:
+
+
             detections_sv = sv.Detections(
                 xyxy=np.array(tracked_boxes),
                 confidence=np.array(confidences),
