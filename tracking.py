@@ -28,7 +28,7 @@ def get_detections_in_roi(results, polygon_pts):
             conf = box.conf[0].item()
             cls = int(box.cls[0].item())
 
-            if cls != 0:  # Only cars
+            if cls != 2:  # Only cars
                 continue
 
             # Calculate center of the bounding box
